@@ -3,6 +3,22 @@ nagios check to notify of IP addresses / hostnames that are not yet defined as n
 
 # Usage
 
+Copy the ```check_nagios_host_discovery``` and ```check_nagios_host_discovery.cfg``` files to the ```/usr/local/nagios/libexec/``` folder on the nagios host.
+
+Edit the contents of the ```check_nagios_host_discovery.cfg``` file using the embedded comments as a guide.
+```
+# config file for nagios check
+# subnets parameter is required, excluded_hosts parameter is optional
+# subnets= parameter expects a comma-separated list of subnets in CIDR format or single IP address or range of IP addresses as expected by nmap
+# excluded_hosts parameter is a comma-separated list of IP addresses and/or hostnames
+# EXAMPLES:
+# subnets=10.1.1.0/24,192.168.2.1-10,172.16.12.99
+# excluded_hosts=10.10.30.1,myhost01,myhost02.example.com
+
+subnets=
+excluded_hosts=
+```
+
 Create a section similar to the following in the services.cfg file on the nagios server:
 ```
    # run a ping scan for new hosts that have not yet been added to nagios monitoring
