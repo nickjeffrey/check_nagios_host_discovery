@@ -65,11 +65,12 @@ use Getopt::Long;                               #allow --long-switches to be use
 # declare variables
 my (%ipaddr,@subnets,$subnet,$nmap,$host,$cmd,$key,$verbose);
 my ($OK,$WARN,$CRITICAL,$UNKNOWN);
-my ($CHECK_NAME);
+my ($CHECK_NAME,$output_filename,$output_message,$output_file_age);
 my ($opt_h,$opt_v);
 my (@nagios_host_files,$file,@nagios_hosts,$nagios_host);
 my ($defined_hosts,$undefined_hosts);
 my (@excluded_hosts,$excluded_host);
+my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks);
 
 
 @subnets        = ("192.168.14.0/24","10.10.30.0/24");
@@ -142,6 +143,67 @@ sub sanity_checks {
       exit;
    }
 }       						#end of subroutien
+
+
+
+sub check_for_output_file {
+   #
+   # a cron job may have already created the output file that we need
+   #
+   print "running check_for_output_file subroutine \n" if ($verbose eq "yes");
+   #
+   $output_filename = "/tmp/nagios.check_nagios_host_discovery.tmp";
+   #
+   # delete the output file if it is more than 86400 seconds old
+   if ( -e $output_filename ) {                                 #see if a cron job has already provided the info we need
+      ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks) = stat($output_filename); #get last modification time in seconds since the epoch
+      $output_file_age = time - $mtime;                                 #figure out how many seconds old the file is
+      print "   output file $output_filename is $output_file_age seconds old \n" if ($verbose eq "yes");
+      if( $output_file_age > 86400 ) {                                   #see if the file is more than 3600 seconds old
+         print "   deleting old copy of $output_filename \n" if ($verbose eq "yes");
+         unlink "$output_filename";                                     #delete the file if it is too old
+      }
+   }                                                                    #end of if block
+   #
+   if ( -e "$output_filename" ) {                               #see if a cron job has already provided the info we need
+      open (OUT,"$output_filename") or die "Cannot open $output_filename for reading $! \n";
+      while (<OUT>) {                                                   #read a line from the text file
+         $output_message = $_  if ( $_ =~ /[a-zA-Z]/);                  #get the content of the output file into a variable
+      }                                                                 #end of while loop
+      close OUT;                                                        #close filehandle
+      print $output_message;                                            #print the content of the output file
+      exit $CRITICAL if ( $output_message =~ /CRITICAL/ );              #exit script with appropriate return code
+      exit $WARN     if ( $output_message =~ /WARN/ );                  #exit script with appropriate return code
+      exit $UNKNOWN  if ( $output_message =~ /UNKNOWN/ );               #exit script with appropriate return code
+      exit $OK       if ( $output_message =~ /OK/ );                    #exit script with appropriate return code
+   }                                                                    #end of if block
+}                                                                       #end of subroutine
+
+
+
+
+sub print_to_outputfile {
+   #
+   print "running print_to_outputfile \n" if ($verbose eq "yes");
+   #
+   # This subroutine is called whenever an output message is printed, to confirm that the $output_file exists
+   #
+   # confirm the output message exists
+   $output_message = "$CHECK_NAME UNKNOWN - could not parse response from remote host \n" unless ($output_message);
+   #
+   # confirm the $output_filename variable is defined
+   unless ($output_filename) {
+      print "$CHECK_NAME UNKNOWN - the \$output_filename variable is not defined.  This might be a script bug. \n";
+      exit $UNKNOWN;                                                            #only get this far if OK/WARN/CRITICAL/UNKNOWN was not found in the output file
+   }                                                                            #end of unless block
+   #
+   if ( ! -e "$output_filename" ) {                                                     #only run this section if $output_filename does not already exist
+      print "   $output_filename not found - writing output message to $output_filename \n" if ($verbose eq "yes");
+      open (OUT,">$output_filename") or die "Cannot open $output_filename for writing: $! \n";
+      print OUT "$output_message";
+      close OUT;                                                                #close filehandle
+   }                                                                            #end of if block
+}
 
 
 
@@ -315,21 +377,29 @@ sub print_output {
    }									#end of foreach loop
    
    if ( $defined_hosts == 0 ) {
-      print "$CHECK_NAME UNKNOWN - could not find any defined nagios hosts, please check nagios .cfg files \n";
+      $output_message = "$CHECK_NAME UNKNOWN - could not find any defined nagios hosts, please check nagios .cfg files \n";
+      print "$output_message";						#print output to screen
+      print_to_outputfile;           					#call subroutine to confirm the output is in the $output_filename used for subsequent script runs
       exit $UNKNOWN;
    }
    
    if ( $undefined_hosts >= 1 ) {
-      print "$CHECK_NAME WARN - the following IP addresses were detected, but do not have corresponding nagios host definitions.  Please add these hosts to nagios monitoring: ";
+      $output_message = "$CHECK_NAME WARN - the following IP addresses were detected, but do not have corresponding nagios host definitions.  Please add these hosts to nagios monitoring: ";
       foreach $key (sort keys %ipaddr) {
-         print "$ipaddr{$key}{ipaddr} $ipaddr{$key}{hostname}, " if ($ipaddr{$key}{defined_in_nagios} eq "no");
+         if ($ipaddr{$key}{defined_in_nagios} eq "no") {
+            $output_message = "$output_message $ipaddr{$key}{ipaddr} $ipaddr{$key}{hostname}, ";
+         }								#end of if block
       }									#end of foreach loop
-      print "\n";							#add newline to end of message
+      $output_message = "$output_message \n"; 				#add newline to end of message
+      print "$output_message";						#print output to screen
+      print_to_outputfile;           					#call subroutine to confirm the output is in the $output_filename used for subsequent script runs
       exit $WARN;
    }
 
    if ( $undefined_hosts == 0 ) {
-      print "$CHECK_NAME OK - all detected IP addresses are already defined as nagios hosts \n";
+      $output_message = "$CHECK_NAME OK - all detected IP addresses are already defined as nagios hosts \n";
+      print "$output_message";						#print output to screen
+      print_to_outputfile;           					#call subroutine to confirm the output is in the $output_filename used for subsequent script runs
       exit $OK;
    }
 }       								#end of subroutien
@@ -340,6 +410,7 @@ sub print_output {
 # ----------------------- main body of program -------------------------------
 get_options;
 sanity_checks;
+check_for_output_file;
 ping_scan;
 get_hostnames;
 remove_excluded_hosts;
