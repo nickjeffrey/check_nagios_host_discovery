@@ -1,7 +1,7 @@
 # check_nagios_host_discovery
 nagios check to notify of IP addresses / hostnames that are not yet defined as nagios hosts
 
-# USAGE
+# Usage
 
 Create a section similar to the following in the services.cfg file on the nagios server:
 ```
@@ -31,7 +31,7 @@ Run this script as an hourly cron job, and save the results to a temporary file 
 5 * * * * /usr/local/nagios/libexec/check_nagios_host_discovery 1>/dev/null 2>/dev/null  #nagios helper script    
 ```
 
-# OUTPUT
+# Output
 
 You will see output similar to the following:
 ```
@@ -42,3 +42,9 @@ nagios host discovery WARN - the following IP addresses were detected, but do no
 nagios host discovery OK - all detected IP addresses are already defined as nagios hosts
 ```
 
+# Troubleshooting
+
+You must have working forward and reverse name resolution, either via the /etc/hosts file on the nagios server, or (preferably) in DNS.
+
+HINT: if you have working forward lookups (A records) but are missing the reverse lookups (PTR records), Microsoft Windows hosts may need these checkboxes selected.
+<img src=images/dns_ptr.png>
