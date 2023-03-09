@@ -63,4 +63,5 @@ nagios host discovery OK - all detected IP addresses are already defined as nagi
 You must have working forward and reverse name resolution, either via the /etc/hosts file on the nagios server, or (preferably) in DNS.
 
 HINT: if you have working forward lookups (A records) but are missing the reverse lookups (PTR records), Microsoft Windows hosts may need these checkboxes selected.
+
 <img src=images/dns_ptr.png>
