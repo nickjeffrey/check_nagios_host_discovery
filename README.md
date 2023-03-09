@@ -12,7 +12,6 @@ Create a section similar to the following in the services.cfg file on the nagios
            service_description             nagios host discovery
            check_command                   check_nagios_host_discovery
            notification_period             8x5                 ; only alert Mon-Fri 8am-5pm
-           check_interval                  720                 ; only check once every 720 minutes
            }
 ```
 
