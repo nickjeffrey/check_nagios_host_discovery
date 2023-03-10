@@ -42,7 +42,7 @@ Create a section similar to the following in the commands.cfg file on the nagios
 ```
 
 If you have a large network, it may take more than 60 seconds to perform the ping scan, which can cause the nagios check to time out.
-Run this script as an hourly cron job, and save the results to a temporary file that will be queried for cached results.
+Run this script as an hourly cron job, and save the results to a temporary file that will be queried for cached results.  HINT: nmap requires root privileges to perform ICMP scans, so you will need to add the following entry to the root crontab.
 ```
 5 * * * * /usr/local/nagios/libexec/check_nagios_host_discovery 1>/dev/null 2>/dev/null  #nagios helper script    
 ```
