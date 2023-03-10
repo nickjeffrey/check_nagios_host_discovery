@@ -70,3 +70,8 @@ HINT: if you have working forward lookups (A records) but are missing the revers
 Question: What if I have working forward name resolution (A record) but do not have working reserve name resolution (PTR record)?
 
 Answer: If reverse name resolution (PTR record) is not working, AND your nagios host definitions use an IP address rather than a hostname, you will be fine.  However, if reverse name resolution (PTR record) is not working, AND your nagios host definitions use hostnames rather than IP addresses, this script will perform an IP address scan, find a particular IP address as being pingable, but will have no way to determine if that IP address is associated with a nagios host definition, so will generate an alert.  Please address the root cause by fixing your broken name resolution.
+
+
+Question: Why are some of my active IP addresses not being detected?  They respond if I manually ping those IP addresses.
+
+Answer: The host discovery is performed by nmap, which requires root privileges to perform ICMP scans.  Ensure the crontab entry described above is running from the root crontab, rather than the low-privileged nagios user.  This will allow the nmap ICMP scan to run with root privileges, and the low-privileged nagios user will re-use the cached results for up to 24 hours.
