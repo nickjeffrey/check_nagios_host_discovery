@@ -20,6 +20,7 @@
 # CHANGE LOG
 # ----------
 #  2023/03/08   njeffrey        Script created
+#  2023/04/10   njeffrey        Add error check to truncate output message if it is too long
 
 
 
@@ -204,10 +205,10 @@ sub check_for_config_file {
    open (IN,"$config_filename") or die "Cannot open $config_filename for reading $! \n";
    while (<IN>) {                                                   	#read a line from the text file
       if ( /^subnets=(.*)/ ) {						
-         @subnets = split("," , $1);					#split the comma-separate list of subnets into array elements
+         @subnets = split("," , $1);					#split the comma-separated list of subnets into array elements
       }									#end of if block
       if ( /^excluded_hosts=(.*)/ ) {						
-         @excluded_hosts = split("," , $1);				#split the comma-separate list of subnets into array elements
+         @excluded_hosts = split("," , $1);				#split the comma-separated list of subnets into array elements
       }									#end of if block
    }                          						#end of while loop
    close IN;                						#close filehandle
@@ -449,6 +450,10 @@ sub print_output {
          }								#end of if block
       }									#end of foreach loop
       $output_message = "$output_message \n"; 				#add newline to end of message
+      if ( length($output_message) > 4000 ) { 				#check to see if $output_message is too long for nagios to handle
+         $output_message = substr($output_message,0,4000);   		#truncate output message to a maximum of 4000 characters
+         $output_message = "$output_message TRUNCATED \n";		#append TRUNCATED to the message so the end user knows the message has been truncated
+      }
       print "$output_message";						#print output to screen
       print_to_outputfile;           					#call subroutine to confirm the output is in the $output_filename used for subsequent script runs
       exit $WARN;
