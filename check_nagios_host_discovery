@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
-#
-#
-#
+
+
+
 
 # OUTSTANDING TASKS
 # -----------------
@@ -21,6 +21,7 @@
 # ----------
 #  2023/03/08   njeffrey        Script created
 #  2023/04/10   njeffrey        Add error check to truncate output message if it is too long
+#  2025/03/07   njeffrey        Save all hostnames from DNS lookups as lowercase to ease comparisons (avoids false alarms if DNS is lowercase by hosts.cfg definition is uppercase)
 
 
 
@@ -308,7 +309,7 @@ sub get_hostnames {
    #
    # Sample command output
    # $ host 192.168.14.111
-   # 1.14.168.192.in-addr.arpa domain name pointer router01.example.com.
+   # 1.14.168.192.in-addr.arpa domain name pointer ROUTER01.example.com.
    # $ host 192.168.14.113
    # Host 113.14.168.192.in-addr.arpa. not found: 3(NXDOMAIN)
 
@@ -325,10 +326,12 @@ sub get_hostnames {
       while (<IN>) {                               			#read a line from STDIN
          if (/domain name pointer ([a-zA-Z0-9\-\.]+)\./) {		#match hostname including DNS suffix
             $ipaddr{$key}{hostname_fqdn} = $1;
+            $ipaddr{$key}{hostname_fqdn} = lc $ipaddr{$key}{hostname_fqdn}; #convert to lowercase to make comparison easier
             print "   IP address $ipaddr{$key}{ipaddr} matches to FQDN  hostname $ipaddr{$key}{hostname_fqdn} \n" if ($verbose eq "yes");                      	
          }								#end of if block
          if (/domain name pointer ([a-zA-Z0-9\-]+)/) {			#match hostname up to the first . character, skipping DNS suffix
             $ipaddr{$key}{hostname} = $1;
+            $ipaddr{$key}{hostname} = lc $ipaddr{$key}{hostname}; 	#convert to lowercase to make comparison easier
             print "   IP address $ipaddr{$key}{ipaddr} matches to short hostname $ipaddr{$key}{hostname} \n" if ($verbose eq "yes");                      	
          }								#end of if block
          if (/NXDOMAIN/) {						#IP address is not in DNS
@@ -388,6 +391,9 @@ sub get_hosts_defined_in_nagios {
          } 								#end of if block
       }									#end of while loop
       close IN;								#close filehandle
+      #
+      # convert all array values to lowercase to make comparisons easier
+      @nagios_hosts = map { lc($_) } @nagios_hosts;
    }									#end of foreach loop
 }       								#end of subroutien
 
